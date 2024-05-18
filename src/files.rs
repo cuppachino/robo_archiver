@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use robo_archiver::ArchiveError;
 
-use crate::DigitalFormat;
+use crate::{ DigitalFormat, IssueFileData };
 
 const SKIP_DIRS: [&str; 2] = ["target", "__MACOSX"];
 const SKIP_EXTS: [&str; 2] = ["rs", "toml"];
@@ -44,26 +44,6 @@ pub fn load_directory<T>(path: T, is_recursive: bool) -> Vec<PathBuf> where T: I
     }
 
     files
-}
-
-/// The data extracted from the file name.
-#[derive(Debug, Clone)]
-pub struct IssueFileData {
-    /// The name of the issue.
-    pub node_title: String,
-    /// The date of the issue.
-    pub date_original: String,
-    /// The date range of the issue.
-    pub date_range: String,
-    /// The format of the file.
-    pub format: DigitalFormat,
-}
-
-impl IssueFileData {
-    // Returns a formatted string with the date appended to the end of the file name, separated by a comma.
-    pub fn node_title_with_date(&self) -> String {
-        format!("{}, {}", self.node_title, self.date_original)
-    }
 }
 
 /// Takes a date string in the format `yyyy-mm-dd` or `yyyy-mm` or `yyyy` and returns a date range string.

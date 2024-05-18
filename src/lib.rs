@@ -1,16 +1,12 @@
 use std::fmt::Formatter;
+use derive_more::From;
 
-#[derive(Debug)]
+#[derive(Debug, From)]
 pub enum ArchiveError {
     Io(std::io::Error),
+    Csv(csv::Error),
     Unimplemented,
     UnparseableFileName(String),
-}
-
-impl From<std::io::Error> for ArchiveError {
-    fn from(err: std::io::Error) -> Self {
-        ArchiveError::Io(err)
-    }
 }
 
 impl std::fmt::Display for ArchiveError {
@@ -19,6 +15,7 @@ impl std::fmt::Display for ArchiveError {
             ArchiveError::Io(err) => write!(f, "I/O error: {}", err),
             ArchiveError::Unimplemented => write!(f, "Unimplemented"),
             ArchiveError::UnparseableFileName(file) => write!(f, "Unparseable file name: {}", file),
+            ArchiveError::Csv(err) => write!(f, "CSV error: {}", err),
         }
     }
 }

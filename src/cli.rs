@@ -9,22 +9,28 @@ pub struct Args {
     #[arg(short, long)]
     pub file_dir: Option<String>,
 
+    /// The output file path (optional).
+    ///
+    /// If not provided, the program will save the output to the current directory without overwriting any files.
+    #[arg(short, long)]
+    pub out_path: Option<String>,
+
+    /// The languages used in the periodical (optional).
+    ///
+    /// Defaults to "English".
+    #[arg(short, long)]
+    pub languages: Option<Vec<String>>,
+
     /// If provided, the program will search for files in the directory recursively (optional).
     ///
     /// Defaults to false.
     #[arg(short, long)]
     pub recursive: bool,
 
-    /// The call number of the periodical (optional).
-    ///
-    /// If not provided, the field will be interpreted as `PERIODICAL` and left blank.
-    #[arg(short = 'n', long)]
-    pub call_number: Option<String>,
-
     /// The Periodical Collection to which the periodical belongs (optional).
     ///
     /// Defaults to "Arizona Collection|Arizona Periodicals and Magazines".
-    #[arg(long)]
+    #[arg(short, long)]
     pub collection: Option<String>,
 
     /// The Contributing Institution that owns the periodical (optional).
@@ -36,12 +42,12 @@ pub struct Args {
     /// The institution that digitized the periodical (optional).
     ///
     /// Defaults to "FamilySearch International".
-    #[arg(long)]
+    #[arg(short, long)]
     pub digitization_institution: Option<String>,
 
     /// The copyright statement to include per issue (optional).
     ///
     /// Defaults to "NO COPYRIGHT - UNITED STATES. [..abbreviated..] http://rightsstatements.org/vocab/NoC-US/1.0/"
-    #[arg(short = 'c', long)]
+    #[arg(long)]
     pub rights_statement: Option<String>,
 }

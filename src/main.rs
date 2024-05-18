@@ -1,8 +1,9 @@
-pub mod data;
-pub mod marc;
 pub mod cli;
-pub mod topics;
+pub mod data;
 pub mod files;
+pub mod marc;
+pub mod save;
+pub mod topics;
 
 use clap::Parser;
 use files::{ load_directory, process_files };
@@ -11,16 +12,14 @@ use crate::{
     cli::Args,
     data::*,
     marc::{ accept_marc, parse_marc },
+    save::write_periodicals_to_file,
     topics::select_topics_with_retries,
 };
 
 fn main() -> Result<(), ArchiveError> {
     // Parse command line arguments.
     let args = Args::parse();
-    let call_number = match args.call_number {
-        Some(call_number) => CallNumber::Shelf(call_number),
-        None => CallNumber::Periodical,
-    };
+    let out_path = args.out_path;
     let collection = args.collection.map(PeriodicalCollection::from).unwrap_or_default();
     let contributing_institution = args.contributing_institution
         .map(ContributingInstitution::from)
@@ -30,20 +29,13 @@ fn main() -> Result<(), ArchiveError> {
         .map(DigitizingInstitution::from)
         .unwrap_or_default();
 
-    // Parse user input for MARC record.
-    let marc = {
-        let marc = accept_marc();
-        let marc = std::io::BufReader::new(marc.as_bytes());
-        parse_marc(call_number, marc).unwrap()
-    };
-
     let periodicals = {
         let path = args.file_dir.unwrap_or_else(|| ".".to_string());
         let is_recursive = args.recursive;
+        let file_paths = load_directory(path, is_recursive);
+        let data = process_files(file_paths)?;
         process_periodicals(
-            path,
-            is_recursive,
-            marc,
+            data,
             digitizing_instituion,
             rights_statement,
             collection,
@@ -51,7 +43,25 @@ fn main() -> Result<(), ArchiveError> {
         )?
     };
 
+    write_periodicals_to_file(periodicals, out_path)?;
+
     Ok(())
+}
+
+fn prompt_marc(collection_name: &str) -> MarcData {
+    let call_number = {
+        let input = prompt_user_input(
+            format!("Enter the call number (or just hit [ENTER] if PERIODICAL) for the \"{}\" collection:", collection_name).as_str()
+        );
+        if input.is_empty() {
+            CallNumber::Periodical
+        } else {
+            CallNumber::Shelf(input)
+        }
+    };
+    let marc = accept_marc();
+    let marc = std::io::BufReader::new(marc.as_bytes());
+    parse_marc(call_number, marc).unwrap()
 }
 
 fn prompt_user_input(prompt: &str) -> String {
@@ -62,18 +72,20 @@ fn prompt_user_input(prompt: &str) -> String {
 }
 
 fn process_periodicals(
-    path: String,
-    is_recursive: bool,
-    marc: MarcData,
+    data: Vec<Vec<IssueFileData>>,
+    // marc: MarcData,
     digitizing_instituion: DigitizingInstitution,
     rights_statement: RightsStatement,
     collection: PeriodicalCollection,
     contributing_institution: ContributingInstitution
 ) -> Result<Vec<Periodical>, ArchiveError> {
-    let file_paths = load_directory(path, is_recursive);
-    let data = process_files(file_paths)?;
     let mut periodicals: Vec<Periodical> = Vec::new();
     for issue_datas in data.iter() {
+        let periodical_collection = issue_datas
+            .first()
+            .expect("Expected periodical to have at least one issue")
+            .node_title.clone();
+        let marc = prompt_marc(periodical_collection.as_str());
         let mut issues: Vec<Issue> = Vec::new();
 
         for (i, issue_data) in issue_datas.iter().enumerate() {

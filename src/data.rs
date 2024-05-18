@@ -1,3 +1,4 @@
+use std::fmt::{ self, Display, Formatter };
 use serde::{ Deserialize, Serialize };
 use derive_more::{ From, Display };
 
@@ -27,7 +28,7 @@ pub const AZ_RIGHTS_STATEMENT: &str =
     "NO COPYRIGHT - UNITED STATES. The organization that has made the Item available believes that the Item is in the Public Domain under the laws of the United States, but a determination was not made as to its copyright status under the copyright laws of other countries. The Item may not be in the Public Domain under the laws of other countries. Please refer to the organization that has made the Item available for more information. http://rightsstatements.org/vocab/NoC-US/1.0/";
 
 /// Defaults to [`FAMILY_SEARCH_DIGITIZING_INSTITUION`].
-#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
+#[derive(Clone, Serialize, Deserialize, Debug, From)]
 pub struct DigitizingInstitution(pub String);
 
 impl Default for DigitizingInstitution {
@@ -36,8 +37,14 @@ impl Default for DigitizingInstitution {
     }
 }
 
+impl Display for DigitizingInstitution {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Defaults to [`AZ_CONTRIBUTING_INSTITUION`].
-#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
+#[derive(Clone, Serialize, Deserialize, Debug, From)]
 pub struct ContributingInstitution(pub String);
 
 impl Default for ContributingInstitution {
@@ -46,8 +53,14 @@ impl Default for ContributingInstitution {
     }
 }
 
+impl Display for ContributingInstitution {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Defaults to [`AZ_PERIDICAL_COLLECTION`].
-#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
+#[derive(Clone, Serialize, Deserialize, Debug, From)]
 pub struct PeriodicalCollection(pub String);
 
 impl Default for PeriodicalCollection {
@@ -56,13 +69,25 @@ impl Default for PeriodicalCollection {
     }
 }
 
+impl Display for PeriodicalCollection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Defaults to [`AZ_RIGHTS_STATEMENT`].
-#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
+#[derive(Clone, Serialize, Deserialize, Debug, From)]
 pub struct RightsStatement(pub String);
 
 impl Default for RightsStatement {
     fn default() -> Self {
         Self(AZ_RIGHTS_STATEMENT.to_string())
+    }
+}
+
+impl Display for RightsStatement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -72,14 +97,42 @@ pub enum IssueNo {
     Season(String),
 }
 
+impl Display for IssueNo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            IssueNo::Number(n) => write!(f, "{}", n),
+            IssueNo::Season(s) => {
+                eprintln!("Seasonal issues are not supported yet, the issue number will be left blank. Verify issue \"{}\".", s);
+                write!(f, "")
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IssueType {
     Text,
 }
 
+impl Display for IssueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            IssueType::Text => write!(f, "Text"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IssueFormatType {
     Periodical,
+}
+
+impl Display for IssueFormatType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IssueFormatType::Periodical => write!(f, "Periodicals"),
+        }
+    }
 }
 
 /// The call number of the item. Obtained from the catalog.
@@ -92,10 +145,29 @@ pub enum CallNumber {
     Shelf(String),
 }
 
+impl Display for CallNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            // Arizona library leaves the call number blank for "PERIODICAL".
+            CallNumber::Periodical => write!(f, ""),
+            CallNumber::Shelf(s) => write!(f, "{}", s),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DigitalFormat {
     PDF,
     Other(String),
+}
+
+impl Display for DigitalFormat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            DigitalFormat::PDF => write!(f, "PDF"),
+            DigitalFormat::Other(s) => write!(f, "{}", s.to_uppercase()),
+        }
+    }
 }
 
 impl From<&str> for DigitalFormat {
@@ -168,6 +240,36 @@ pub struct MarcData {
     /// E.g. `004 -> 000000004`.
     #[serde(rename = "OCLC Number")]
     pub oclc_number: String,
+}
+
+/// The data extracted from the file name.
+#[derive(Debug, Clone)]
+pub struct IssueFileData {
+    /// The name of the issue.
+    pub node_title: String,
+    /// The date of the issue.
+    pub date_original: String,
+    /// The date range of the issue.
+    pub date_range: String,
+    /// The format of the file.
+    pub format: DigitalFormat,
+}
+
+pub trait NodeTitleWithDate {
+    // Returns a formatted string with the date appended to the end of the file name, separated by a comma.
+    fn node_title_with_date(&self) -> String;
+}
+
+impl NodeTitleWithDate for IssueFileData {
+    fn node_title_with_date(&self) -> String {
+        format!("{}, {}", self.node_title, self.date_original)
+    }
+}
+
+impl NodeTitleWithDate for Issue {
+    fn node_title_with_date(&self) -> String {
+        self.node_title.clone()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
