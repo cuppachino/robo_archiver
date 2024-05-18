@@ -1,0 +1,25 @@
+Tag	Ind.	Subfields
+001	 	ocn893691141
+003	 	OCoLC
+005	 	20141024031649.0
+008	 	141024u19uuuuuuazumr 0 0eng d
+035		$a(Sirsi) o893691141
+035		$a(OCoLC)893691141
+040		$aAZP$cAZP
+049		$aAZPF
+245	03	$aAn Arizona desert-ation.
+246	13	$aArizona desertation.
+246	13	$aArizona desert ation.
+246	13	$aArizona dissertation.
+260		$aPhoenix, Ariz. :$bDesert Sunshine Exposure Tests.
+300		$billustrations ;$c28 cm.
+336		$atext$btxt$2rdacontent
+337		$aunmediated$bn$2rdamedia
+338		$avolume$bnc$2rdacarrier
+500		$a"C.R. Caryl, director."
+588		$aDescription based on: April 1967 ; title from caption
+610	20	$aDesert Sunshine Exposure Tests (Phoenix, Ariz.)
+650	0	$aSolar radiation$xEnvironmental effects$xTesting.
+650	0	$aMaterials$xTesting.
+700	1	$aCaryl, C. R.
+710	2	$aDesert Sunshine Exposure Tests (Phoenix, Ariz.)

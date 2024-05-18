@@ -1,4 +1,5 @@
 use serde::{ Deserialize, Serialize };
+use derive_more::{ From, Display };
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Periodical {
@@ -26,7 +27,7 @@ pub const AZ_RIGHTS_STATEMENT: &str =
     "NO COPYRIGHT - UNITED STATES. The organization that has made the Item available believes that the Item is in the Public Domain under the laws of the United States, but a determination was not made as to its copyright status under the copyright laws of other countries. The Item may not be in the Public Domain under the laws of other countries. Please refer to the organization that has made the Item available for more information. http://rightsstatements.org/vocab/NoC-US/1.0/";
 
 /// Defaults to [`FAMILY_SEARCH_DIGITIZING_INSTITUION`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
 pub struct DigitizingInstitution(pub String);
 
 impl Default for DigitizingInstitution {
@@ -36,7 +37,7 @@ impl Default for DigitizingInstitution {
 }
 
 /// Defaults to [`AZ_CONTRIBUTING_INSTITUION`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
 pub struct ContributingInstitution(pub String);
 
 impl Default for ContributingInstitution {
@@ -46,7 +47,7 @@ impl Default for ContributingInstitution {
 }
 
 /// Defaults to [`AZ_PERIDICAL_COLLECTION`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
 pub struct PeriodicalCollection(pub String);
 
 impl Default for PeriodicalCollection {
@@ -56,7 +57,7 @@ impl Default for PeriodicalCollection {
 }
 
 /// Defaults to [`AZ_RIGHTS_STATEMENT`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, From, Display)]
 pub struct RightsStatement(pub String);
 
 impl Default for RightsStatement {
@@ -65,24 +66,24 @@ impl Default for RightsStatement {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum IssueNo {
     Number(String),
     Season(String),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IssueType {
     Text,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum IssueFormatType {
     Periodical,
 }
 
 /// The call number of the item. Obtained from the catalog.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum CallNumber {
     /// E.g. `PERIODICAL`.
     Periodical,
@@ -91,9 +92,82 @@ pub enum CallNumber {
     Shelf(String),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DigitalFormat {
     PDF,
+    Other(String),
+}
+
+impl From<&str> for DigitalFormat {
+    fn from(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "pdf" => DigitalFormat::PDF,
+            _ => DigitalFormat::Other(s.to_string()),
+        }
+    }
+}
+
+impl From<String> for DigitalFormat {
+    fn from(s: String) -> Self {
+        match s.to_lowercase().as_str() {
+            "pdf" => DigitalFormat::PDF,
+            _ => DigitalFormat::Other(s),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MarcData {
+    /// The creator of the item. Obtained from the catalog or MARC record.
+    ///
+    /// Multiple creators are separated with a pipe `|`.
+    ///
+    /// MARC field: 100 or 110, sometimes 700 and 710.
+    ///
+    /// Format: `First name Last name, (dates)`.
+    #[serde(rename = "Creator")]
+    pub creators: Vec<String>,
+
+    /// Publisher name from the periodical, obtained from the catalog.
+    ///
+    /// Sometimes the publisher's name will be shortened in the catalog, but the full name should be used when possible.
+    ///
+    /// ### Warn
+    ///
+    /// Publishers and presses/printers are not the same. This field is for the publisher.
+    ///
+    /// MARC field: 260 or 264 subfield b. (a is the place of publication, we just need b, c is the date of publication.)
+    #[serde(rename = "Publisher")]
+    pub publisher: String,
+
+    /// Subject headings from the periodical, obtained from the catalog.
+    ///
+    /// Subjects are separated with a pipe `|`.
+    ///
+    /// MARC field: 610, 650 (possibly any 600???).
+    ///
+    /// Format examples:
+    /// - `Mexico$xEconomic conditions -> Mexico--Economic conditions `.
+    /// - `Water rights$zArizona. -> Water rights--Arizona`.
+    ///
+    /// If there is only one heading, it should be noted for further review by the operator, and an
+    /// additional heading should be grabbed from https://authorities.loc.gov/cgi-bin/Pwebrecon.cgi?DB=local&PAGE=First.
+    #[serde(rename = "Subject")]
+    pub subject_headings: Vec<String>,
+
+    /// Essentially the serial number of the issue. Obtained from the catalog.
+    ///
+    /// If the call number is Periodical, this can be left blank.
+    #[serde(rename = "Call Number")]
+    pub call_number: CallNumber,
+
+    /// Obtained from the catalog. If the number is less than 9 digits, left pad with zeros.
+    ///
+    /// MARC field: 001 or 003.
+    ///
+    /// E.g. `004 -> 000000004`.
+    #[serde(rename = "OCLC Number")]
+    pub oclc_number: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -118,16 +192,6 @@ pub struct Issue {
     #[serde(rename = "PascalCase")]
     pub next_issue: Option<String>,
 
-    /// The creator of the item. Obtained from the catalog or MARC record.
-    ///
-    /// Multiple creators are separated with a pipe `|`.
-    ///
-    /// MARC field: 100 or 110, sometimes 710.
-    ///
-    /// Format: `First name Last name, (dates)`.
-    #[serde(rename = "Creator")]
-    pub creators: Vec<String>,
-
     /// Contributor names from the periodical, including editors, staff members, and authors.
     ///
     /// Multiple contributors are separated with a pipe `|`.
@@ -138,46 +202,19 @@ pub struct Issue {
     #[serde(rename = "Contributor")]
     pub contributors: Vec<String>,
 
-    /// Publisher name from the periodical, obtained from the catalog.
-    ///
-    /// Sometimes the publisher's name will be shortened in the catalog, but the full name should be used when possible.
-    ///
-    /// ### Warn
-    ///
-    /// Publishers and presses/printers are not the same. This field is for the publisher.
-    ///
-    /// MARC field: 260 or 264 subfield b.
-    #[serde(rename = "Publisher")]
-    pub publisher: String,
-
-    /// The volume number of the periodical, if applicable.
+    /// The volume number of the periodical, if applicable. Obtained from the periodical.
     ///
     /// This is sometimes a roman numeral, but should be entered as an arabic numeral.
     #[serde(rename = "Volume")]
     pub volume_no: Option<String>,
 
-    /// The issue number of the periodical, if applicable.
+    /// The issue number of the periodical, if applicable. Obtained from the periodical.
     ///
     /// This is sometimes a roman numeral, but should be entered as an arabic numeral.
     ///
     /// If the issue is seasonal, rather than numerical, this field should be entered along with the issue name in the `description` field of the spreadsheet.
     #[serde(rename = "Issue")]
     pub issue_no: Option<IssueNo>,
-
-    /// Subject headings from the periodical, obtained from the catalog.
-    ///
-    /// Subjects are separated with a pipe `|`.
-    ///
-    /// MARC field: 610, 650 (possibly any 600???).
-    ///
-    /// Format examples:
-    /// - `Mexico$xEconomic conditions -> Mexico--Economic conditions `.
-    /// - `Water rights$zArizona. -> Water rights--Arizona`.
-    ///
-    /// If there is only one heading, it should be noted for further review by the operator, and an
-    /// additional heading should be grabbed from https://authorities.loc.gov/cgi-bin/Pwebrecon.cgi?DB=local&PAGE=First.
-    #[serde(rename = "Subject")]
-    pub subject_headings: Vec<String>,
 
     /// The year of specific issue.
     ///
@@ -221,21 +258,8 @@ pub struct Issue {
     #[serde(rename = "Subcollection")]
     pub parent_collection: String,
 
-    /// Essentially the serial number of the issue. Obtained from the catalog.
-    ///
-    /// If the call number is Periodical, this can be left blank.
-    #[serde(rename = "Call Number")]
-    pub call_number: CallNumber,
-
-    /// Obtained from the catalog. If the number is less than 9 digits, left pad with zeros.
-    ///
-    /// MARC field: 001 or 003.
-    ///
-    /// E.g. `004 -> 000000004`.
-    #[serde(rename = "OCLC Number")]
-    pub oclc_number: String,
-
-    /** These can use their default values */
+    /// The MARC data for the parent periodical and issue.
+    pub marc: MarcData,
 
     /// The copyright statement.
     #[serde(rename = "Rights Statement")]
