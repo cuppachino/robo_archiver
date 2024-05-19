@@ -66,3 +66,23 @@ Marc data and call number are obtained from the [asla catalogue](https://asla.en
   ```
 
 </details>
+
+## Build steps
+
+On MacOS you may need to run `xcode-select --install` to be able to compile macros.
+
+1. clone the repository
+2. run `cargo build --release`
+
+### Post-build
+
+#### Windows
+
+Add `<path_to_clone_directory>\target\release` to your PATH, or alias it in your powershell `$PROFILE`.
+
+#### MacOS
+
+Create an alias in `.zshrc`: 
+```zsh
+alias robo_archiver=<path_to_clone_directory>\target\release\robo_archiver
+```
