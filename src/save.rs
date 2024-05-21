@@ -188,6 +188,11 @@ pub fn write_periodicals_to_file(
         let mut out_path = std::path::Path::new(&out_path).to_path_buf();
         let current_dir = std::env::current_dir()?;
 
+        // if the path does not have a csv extension, add it
+        if out_path.extension().is_none() {
+            out_path.set_extension("csv");
+        }
+
         if out_path.exists() {
             let mut i = 1;
             loop {

@@ -6,7 +6,7 @@ use crate::{ DigitalFormat, IssueFileData };
 
 const SKIP_DIRS: [&str; 2] = ["target", "__MACOSX"];
 const SKIP_EXTS: [&str; 7] = ["rs", "toml", "csv", "xlsx", "xlsm", "xlsb", "xltx"];
-const SKIP_FILES: [&str; 1] = [".DS_Store"];
+const SKIP_FILES: [&str; 2] = [".DS_Store", ".gitignore"];
 
 pub fn load_directory<T>(path: T, is_recursive: bool, exts: Option<Vec<String>>) -> Vec<PathBuf>
     where T: Into<PathBuf>
@@ -37,8 +37,8 @@ pub fn load_directory<T>(path: T, is_recursive: bool, exts: Option<Vec<String>>)
                     if let Some(ext) = path.extension() {
                         !exts.contains(&ext.to_str().unwrap().to_string())
                     } else {
-                        eprintln!("File {:?} has no extension.", path);
-                        false
+                        eprintln!("File {:?} has no extension and will not be processed", path);
+                        true
                     }
                 })
             {
