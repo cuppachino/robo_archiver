@@ -9,6 +9,10 @@ pub struct Args {
     #[arg(short, long)]
     pub file_dir: Option<String>,
 
+    /// If provided, the program will only match files with the given extension(s) (optional).
+    #[arg(short = 'e', long)]
+    pub file_ext: Option<Vec<String>>,
+
     /// The output file path (optional).
     ///
     /// If not provided, the program will save the output to the current directory without overwriting any files.

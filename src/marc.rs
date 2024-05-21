@@ -90,21 +90,46 @@ impl MarcData {
 
         for record in records {
             match record.tag.as_str() {
-                "100" | "110" | "700" | "710" => {
+                "700" => {
                     creators.extend(
                         record.subfields
                             .iter()
                             .filter(|sf| sf.code == 'a')
-                            .map(|sf| sf.value.clone())
+                            .map(|sf| {
+                                // split on comma and reverse the order.
+                                // e.g. "Smith, John A. (Date)" -> "John A. Smith (Date)"
+                                let parts = sf.value.split(", ").collect::<Vec<&str>>();
+                                let string = if parts.len() == 2 {
+                                    format!("{} {}", parts[1], parts[0])
+                                } else {
+                                    sf.value.clone()
+                                };
+                                string.trim_end_matches(is_grammatical_punctuation).to_string()
+                            })
+                    );
+                }
+                "100" | "110" | "710" => {
+                    creators.extend(
+                        record.subfields
+                            .iter()
+                            .filter(|sf| sf.code == 'a')
+                            .map(|sf|
+                                sf.value
+                                    .clone()
+                                    .trim_end_matches(is_grammatical_punctuation)
+                                    .to_string()
+                            )
                     );
                 }
                 "260" | "264" => {
                     publisher = record.subfields
                         .iter()
                         .filter(|sf| sf.code == 'b')
-                        .map(|sf| sf.value.clone())
+                        .map(|sf| sf.value.trim_end_matches(is_grammatical_punctuation).to_string())
                         .collect::<Vec<String>>()
-                        .join(" ");
+                        .join(" ")
+                        .trim_end_matches(is_grammatical_punctuation)
+                        .to_string();
                 }
                 "610" | "650" => {
                     let mut subject = Vec::default();
@@ -117,7 +142,9 @@ impl MarcData {
                             subject.push(value);
                         }
                     }
-                    subject_headings.push(subject.join(""));
+                    subject_headings.push(
+                        subject.join("").trim_end_matches(is_grammatical_punctuation).to_string()
+                    );
                 }
                 "001" | "003" => {
                     if
@@ -143,5 +170,12 @@ impl MarcData {
             subject_headings,
             oclc_number: oclc_number.expect("No OCLC number found."),
         })
+    }
+}
+
+fn is_grammatical_punctuation(c: char) -> bool {
+    match c {
+        '.' | ',' | ' ' | ';' => true,
+        _ => false,
     }
 }

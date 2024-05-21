@@ -19,6 +19,8 @@ use crate::{
 fn main() -> Result<(), ArchiveError> {
     // Parse command line arguments.
     let args = Args::parse();
+    let languages = args.languages.unwrap_or_else(|| vec!["English".to_string()]);
+    let file_exts = args.file_ext;
     let out_path = args.out_path;
     let collection = args.collection.map(PeriodicalCollection::from).unwrap_or_default();
     let contributing_institution = args.contributing_institution
@@ -32,10 +34,11 @@ fn main() -> Result<(), ArchiveError> {
     let periodicals = {
         let path = args.file_dir.unwrap_or_else(|| ".".to_string());
         let is_recursive = args.recursive;
-        let file_paths = load_directory(path, is_recursive);
+        let file_paths = load_directory(path, is_recursive, file_exts);
         let data = process_files(file_paths)?;
         process_periodicals(
             data,
+            languages,
             digitizing_instituion,
             rights_statement,
             collection,
@@ -73,7 +76,7 @@ fn prompt_user_input(prompt: &str) -> String {
 
 fn process_periodicals(
     data: Vec<Vec<IssueFileData>>,
-    // marc: MarcData,
+    languages: Vec<String>,
     digitizing_instituion: DigitizingInstitution,
     rights_statement: RightsStatement,
     collection: PeriodicalCollection,
@@ -106,7 +109,7 @@ fn process_periodicals(
                 next_issue,
                 previous_issue,
                 contributors: Vec::new(),
-                languages: Vec::new(),
+                languages: languages.clone(),
                 issue_no: None,
                 volume_no: None,
                 item_type: IssueType::Text,

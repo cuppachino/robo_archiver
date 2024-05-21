@@ -5,10 +5,12 @@ use robo_archiver::ArchiveError;
 use crate::{ DigitalFormat, IssueFileData };
 
 const SKIP_DIRS: [&str; 2] = ["target", "__MACOSX"];
-const SKIP_EXTS: [&str; 2] = ["rs", "toml"];
+const SKIP_EXTS: [&str; 7] = ["rs", "toml", "csv", "xlsx", "xlsm", "xlsb", "xltx"];
 const SKIP_FILES: [&str; 1] = [".DS_Store"];
 
-pub fn load_directory<T>(path: T, is_recursive: bool) -> Vec<PathBuf> where T: Into<PathBuf> {
+pub fn load_directory<T>(path: T, is_recursive: bool, exts: Option<Vec<String>>) -> Vec<PathBuf>
+    where T: Into<PathBuf>
+{
     let path: PathBuf = path.into();
     let mut files = Vec::new();
 
@@ -23,10 +25,23 @@ pub fn load_directory<T>(path: T, is_recursive: bool) -> Vec<PathBuf> where T: I
                 continue;
             }
             if is_recursive {
-                files.extend(load_directory(&path, is_recursive));
+                files.extend(load_directory(&path, is_recursive, exts.clone()));
             }
         } else {
             if SKIP_FILES.contains(&path.file_name().unwrap().to_str().unwrap()) {
+                continue;
+            }
+
+            if
+                exts.as_ref().is_some_and(|exts| {
+                    if let Some(ext) = path.extension() {
+                        !exts.contains(&ext.to_str().unwrap().to_string())
+                    } else {
+                        eprintln!("File {:?} has no extension.", path);
+                        false
+                    }
+                })
+            {
                 continue;
             }
 
