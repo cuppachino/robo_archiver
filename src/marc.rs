@@ -134,12 +134,19 @@ impl MarcData {
                 "610" | "650" => {
                     let mut subject = Vec::default();
                     for Subfield { code, value } in record.subfields {
-                        if code == 'a' {
-                            subject.push(value);
-                        } else if code == 'x' {
-                            // subject.push("—".to_string()); // em dash
-                            subject.push("--".to_string()); // em dash
-                            subject.push(value);
+                        match code {
+                            'a' => subject.push(value),
+                            'x' | 'v' | 'z' => {
+                                subject.push("--".to_string()); // em dash
+                                subject.push(value);
+                            }
+                            'd' => {
+                                subject.push(", ".to_string()); // em dash
+                                subject.push(value);
+                            }
+                            _ => {
+                                println!("[WARN] UNKNOWN SUBFIELD CODE FOR SUBJECTS, IGNORING: {}", code);
+                            }
                         }
                     }
                     subject_headings.push(
