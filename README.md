@@ -86,3 +86,7 @@ Create an alias in `.zshrc`:
 ```zsh
 alias robo_archiver=<path_to_clone_directory>\target\release\robo_archiver
 ```
+
+## Download the latest release
+
+Alternatively, you may download and extract the latest release, store it somewhere safe, and alias its path instead.
